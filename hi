@@ -1,241 +1,372 @@
+--==================================================
+-- Pumpkin Hub (Anti-Void Fix)
+-- cracked by ouxhiee
+--==================================================
+
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
 
-local LocalPlayer = Players.LocalPlayer
+local player = Players.LocalPlayer
 
--- Variáveis do primeiro script (Física/Tracker)
-local v1 = nil
-local v2 = nil
-local v3 = nil
-local v4 = 0
-local v5 = false
-local v6 = true
-local v7 = 0
+-- Destruir UI anterior se existir
+if CoreGui:FindFirstChild("HalloweenFarmUI") then
+    CoreGui.HalloweenFarmUI:Destroy()
+end
 
--- Configurações do segundo script (Vôo/Pulo na água sem resetar speed)
-local WATER_JUMP_FORCE = 167 -- quanto maior, mais alto o pulo
+-- Variáveis de Configuração
+getgenv().CandyFarm = false
+getgenv().UndergroundMode = false
+getgenv().CandyESP = false
+getgenv().AutoResetFull = false
+getgenv().KillAllMurderer = false
+getgenv().FlingMurderer = false
+getgenv().AntiFling = true
+getgenv().MoveSpeed = 20
 
----------------------------------------------------------
--- SISTEMA ANTI-MOEDA (MM2)
----------------------------------------------------------
+-- Interface Principal (ScreenGui)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HalloweenFarmUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
 
-local function handleAntiCoin(object)
+-- ==================== PAINEL PRINCIPAL ====================
+local Main = Instance.new("Frame")
+Main.Name = "Main"
+Main.Size = UDim2.new(0, 260, 0, 430)
+Main.Position = UDim2.new(0.1, 0, 0.2, 0)
+Main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Visible = true
+Main.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 10)
+MainCorner.Parent = Main
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(255, 110, 0)
+MainStroke.Thickness = 1.5
+MainStroke.Parent = Main
+
+local Header = Instance.new("Frame")
+Header.Name = "Header"
+Header.Size = UDim2.new(1, 0, 0, 45)
+Header.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+Header.BorderSizePixel = 0
+Header.Parent = Main
+
+local MainHeaderCorner = Instance.new("UICorner")
+MainHeaderCorner.CornerRadius = UDim.new(0, 10)
+MainHeaderCorner.Parent = Header
+
+local HeaderGradient = Instance.new("UIGradient")
+HeaderGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 100, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 40, 0))
+}
+HeaderGradient.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 15, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "🎃 Pumpkin Hub • cracked by ouxhiee"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 13
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local Content = Instance.new("ScrollingFrame")
+Content.Size = UDim2.new(1, -16, 1, -55)
+Content.Position = UDim2.new(0, 8, 0, 50)
+Content.BackgroundTransparency = 1
+Content.CanvasSize = UDim2.new(0, 0, 0, 0)
+Content.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Content.ScrollBarThickness = 3
+Content.ScrollBarImageColor3 = Color3.fromRGB(255, 110, 0)
+Content.Parent = Main
+
+local UIList = Instance.new("UIListLayout")
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Padding = UDim.new(0, 8)
+UIList.Parent = Content
+
+-- Funções da Interface (Toggles & Sliders)
+local function CreateToggle(text, defaultState, callback)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, 0, 0, 40)
+    Frame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = Content
+
+    local FrameCorner = Instance.new("UICorner")
+    FrameCorner.CornerRadius = UDim.new(0, 8)
+    FrameCorner.Parent = Frame
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(0.7, 0, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    Label.TextSize = 11
+    Label.Font = Enum.Font.GothamSemibold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Frame
+
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(0, 45, 0, 22)
+    ToggleBtn.Position = UDim2.new(1, -50, 0.5, -11)
+    ToggleBtn.BackgroundColor3 = defaultState and Color3.fromRGB(255, 110, 0) or Color3.fromRGB(45, 45, 55)
+    ToggleBtn.Text = ""
+    ToggleBtn.Parent = Frame
+
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(1, 0)
+    ToggleCorner.Parent = ToggleBtn
+
+    local Dot = Instance.new("Frame")
+    Dot.Size = UDim2.new(0, 16, 0, 16)
+    Dot.Position = defaultState and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+    Dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Dot.BorderSizePixel = 0
+    Dot.Parent = ToggleBtn
+
+    local DotCorner = Instance.new("UICorner")
+    DotCorner.CornerRadius = UDim.new(1, 0)
+    DotCorner.Parent = Dot
+
+    local state = defaultState
+    ToggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        local targetPos = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+        local targetColor = state and Color3.fromRGB(255, 110, 0) or Color3.fromRGB(45, 45, 55)
+
+        Dot:TweenPosition(targetPos, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+        ToggleBtn.BackgroundColor3 = targetColor
+
+        callback(state)
+    end)
+end
+
+local function CreateSlider(text, min, max, default, callback)
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(1, 0, 0, 50)
+    Frame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = Content
+
+    local FrameCorner = Instance.new("UICorner")
+    FrameCorner.CornerRadius = UDim.new(0, 8)
+    FrameCorner.Parent = Frame
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -20, 0, 20)
+    Label.Position = UDim2.new(0, 10, 0, 5)
+    Label.BackgroundTransparency = 1
+    Label.Text = text .. ": " .. tostring(default)
+    Label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    Label.TextSize = 11
+    Label.Font = Enum.Font.GothamSemibold
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Frame
+
+    local TextBox = Instance.new("TextBox")
+    TextBox.Size = UDim2.new(1, -20, 0, 18)
+    TextBox.Position = UDim2.new(0, 10, 0, 26)
+    TextBox.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+    TextBox.Text = tostring(default)
+    TextBox.TextColor3 = Color3.fromRGB(255, 110, 0)
+    TextBox.TextSize = 11
+    TextBox.Font = Enum.Font.Gotham
+    TextBox.Parent = Frame
+
+    local BoxCorner = Instance.new("UICorner")
+    BoxCorner.CornerRadius = UDim.new(0, 4)
+    BoxCorner.Parent = TextBox
+
+    TextBox.FocusLost:Connect(function()
+        local val = tonumber(TextBox.Text)
+        if val then
+            val = math.clamp(val, min, max)
+            Label.Text = text .. ": " .. tostring(val)
+            callback(val)
+        end
+    end)
+end
+
+-- Adicionando Opções no Painel
+CreateToggle("Auto Farm Candies", false, function(s) getgenv().CandyFarm = s end)
+CreateToggle("Underground Mode (Seguro)", false, function(s) getgenv().UndergroundMode = s end)
+CreateToggle("Anti-Fling", true, function(s) getgenv().AntiFling = s end)
+CreateToggle("Candy ESP (Destacar)", false, function(s) getgenv().CandyESP = s end)
+CreateToggle("Full, Reset (Auto Reset)", false, function(s) getgenv().AutoResetFull = s end)
+CreateToggle("Full, Kill All (Murderer Only)", false, function(s) getgenv().KillAllMurderer = s end)
+CreateToggle("Fling Murderer", false, function(s) getgenv().FlingMurderer = s end)
+CreateSlider("Velocidade Segura", 10, 40, 20, function(v) getgenv().MoveSpeed = v end)
+
+-- Checar se está cheio (Full)
+local function checkIfFull()
+    local success, result = pcall(function()
+        local coinsText = player.PlayerGui.MainGUI.Game.Coins.Text
+        local current, max = coinsText:match("(%d+)%s*/%s*(%d+)")
+        if current and max then
+            return tonumber(current) >= tonumber(max)
+        end
+    end)
+    return success and result
+end
+
+-- Anti-Fling Loop Ativo
+RunService.Stepped:Connect(function()
     pcall(function()
-        -- Verifica se o objeto é uma moeda do MM2 por nome ou estrutura comum
-        if object.Name == "Coin" or object.Name == "CoinContainer" or object:FindFirstChild("CoinVisual") then
-            -- Desativa a capacidade de toque localmente para não coletar
-            if object:IsA("BasePart") then
-                object.CanTouch = false
-            end
-            for _, child in ipairs(object:GetDescendants()) do
-                if child:IsA("BasePart") then
-                    child.CanTouch = false
+        if getgenv().AntiFling then
+            for _, v in pairs(Players:GetPlayers()) do
+                if v ~= player and v.Character then
+                    for _, part in pairs(v.Character:GetChildren()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
                 end
             end
         end
     end)
-end
-
--- Inicializa a varredura de moedas existentes e novas de forma isolada
-task.spawn(function()
-    pcall(function()
-        -- Verifica o que já está no mapa
-        for _, desc in ipairs(Workspace:GetDescendants()) do
-            handleAntiCoin(desc)
-        end
-        
-        -- Escuta novas moedas que surgirem durante a partida
-        Workspace.DescendantAdded:Connect(function(desc)
-            handleAntiCoin(desc)
-        end)
-    end)
 end)
 
----------------------------------------------------------
--- FUNÇÕES DO SISTEMA DE FÍSICA / TRACKER
----------------------------------------------------------
-
-local function getAveragePosition(p1)
-    local sum = Vector3.new(0, 0, 0)
-    local count = 0
-
-    for _, v in ipairs(p1:GetDescendants()) do
-        if v:IsA("BasePart") and not v.Anchored and v.Name ~= "TrackerPart" and not v:FindFirstAncestorOfClass("Tool") then
-            sum += v.Position
-            count += 1
-        end
-    end
-
-    if count == 0 then
-        return v2.Position
-    end
-
-    return sum / count
-end
-
-local function zeroOutCharacterMass()
-    if not v1 then return end
-    for _, v in ipairs(v1:GetDescendants()) do
-        if v:IsA("BasePart") and v ~= v3 and not v:FindFirstAncestorOfClass("Tool") then
-            v.CustomPhysicalProperties = PhysicalProperties.new(0.2, 0.3, 0.5, 1, 1)
-        end
-    end
-end
-
-local function waitForMass(part)
-    local count = 0
-    while part.AssemblyMass < 0.01 and count < 40 do
-        task.wait(0.1)
-        count += 1
-    end
-    return part.AssemblyMass
-end
-
-local function updateTracker()
-    if not v6 or not v1 or not v2 then
-        return
-    end
-
-    if not v3 or not v3.Parent then
-        local TrackerPart = Instance.new("Part")
-        TrackerPart.Name = "TrackerPart"
-        TrackerPart.Size = Vector3.new(2, 2, 2)
-        TrackerPart.Transparency = 1
-        TrackerPart.CanCollide = false
-        TrackerPart.Anchored = false
-        TrackerPart.Parent = v1
-
-        local WeldConstraint = Instance.new("WeldConstraint")
-        WeldConstraint.Part0 = TrackerPart
-        WeldConstraint.Part1 = v2
-        WeldConstraint.Parent = TrackerPart
-
-        v3 = TrackerPart
-    end
-
-    local avgPos = getAveragePosition(v1)
-    v3.Position = avgPos + (avgPos - v2.Position) * 0.35
-
-    zeroOutCharacterMass()
-
-    local volume = v3.Size.X * v3.Size.Y * v3.Size.Z
-    v3.CustomPhysicalProperties = PhysicalProperties.new(
-        math.clamp((volume > 0 and v4 / volume or 1), 0.1, 35),
-        0.3,
-        0.5,
-        1,
-        1
-    )
-end
-
-local function safeUpdate()
-    if not v6 then
-        return
-    end
-
-    local now = tick()
-    if now - v7 < 0.2 then
-        return
-    end
-
-    v7 = now
-    task.defer(updateTracker)
-end
-
----------------------------------------------------------
--- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO DO PERSONAGEM
----------------------------------------------------------
-
-local function onCharacter(character)
-    v1 = character
-
-    if v3 then
-        pcall(function() v3:Destroy() end)
-        v3 = nil
-    end
-
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    local root = character:WaitForChild("HumanoidRootPart", 5)
-    
-    if not humanoid or not root then return end
-    
-    local swimming = false
-
-    -- Detecta se está nadando e impede o jogo de resetar sua velocidade
-    local stateConnection
-    stateConnection = humanoid.StateChanged:Connect(function(old, new)
-        if not character.Parent then 
-            if stateConnection then stateConnection:Disconnect() end
-            return 
-        end
-        
-        if new == Enum.HumanoidStateType.Swimming then
-            swimming = true
-        else
-            swimming = false
-        end
-
-        if old == Enum.HumanoidStateType.Swimming and new == Enum.HumanoidStateType.Jumping then
+-- Lógica do Auto Farm Seguro com Ancoragem (Evita queda para o Void)
+task.spawn(function()
+    while task.wait() do
+        if getgenv().CandyFarm then
             pcall(function()
-                humanoid:ChangeState(Enum.HumanoidStateType.Freefall)
+                if getgenv().AutoResetFull and checkIfFull() then
+                    if player.Character and player.Character:FindFirstChild("Humanoid") then
+                        player.Character.Humanoid.Health = 0
+                        task.wait(3)
+                    end
+                end
+
+                local char = player.Character
+                if not char then return end
+                local root = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if not root or not hum then return end
+
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if not getgenv().CandyFarm then break end
+
+                    if (obj.Name == "Candy" or obj.Name == "CoinVisual") and obj:IsA("BasePart") then
+                        local targetPos = obj.Position
+
+                        if getgenv().UndergroundMode then
+                            targetPos = Vector3.new(targetPos.X, targetPos.Y - 3.5, targetPos.Z)
+                        else
+                            targetPos = Vector3.new(targetPos.X, targetPos.Y + 2, targetPos.Z)
+                        end
+
+                        root.Anchored = true
+
+                        while getgenv().CandyFarm and obj and obj.Parent and (root.Position - targetPos).Magnitude > 2 do
+                            local direction = (targetPos - root.Position).Unit
+                            local step = direction * math.min(getgenv().MoveSpeed * 0.1, (root.Position - targetPos).Magnitude)
+
+                            root.CFrame = CFrame.new(root.Position + step)
+                            RunService.RenderStepped:Wait()
+                        end
+
+                        root.Anchored = false
+                        task.wait(0.1)
+                    end
+                end
+            end)
+        else
+            pcall(function()
+                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.Anchored = false
+                end
             end)
         end
-    end)
-
-    -- Detecta quando você aperta pulo (Aplica força mantendo a velocidade horizontal)
-    local jumpConnection
-    jumpConnection = UserInputService.JumpRequest:Connect(function()
-        if not character.Parent then 
-            if jumpConnection then jumpConnection:Disconnect() end
-            return 
-        end
-        
-        -- O pcall aqui garante que, se você abrir o chat ou menu enquanto pula, o script não quebre
-        pcall(function()
-            if swimming and root then
-                root.AssemblyLinearVelocity = Vector3.new(
-                    root.AssemblyLinearVelocity.X,
-                    WATER_JUMP_FORCE,
-                    root.AssemblyLinearVelocity.Z
-                )
-            end
-        end)
-    end)
-
-    -- --- Continuação da configuração do Script 1 ---
-    task.delay(1, function()
-        if not v1 or v1 ~= character then
-            return
-        end
-
-        v2 = root
-        v5 = true
-        v4 = waitForMass(v2)
-
-        pcall(updateTracker)
-
-        character.DescendantAdded:Connect(function(obj)
-            if not obj:FindFirstAncestorOfClass("Tool") then
-                safeUpdate()
-            end
-        end)
-
-        character.DescendantRemoving:Connect(function(obj)
-            if not obj:FindFirstAncestorOfClass("Tool") then
-                safeUpdate()
-            end
-        end)
-    end)
-end
-
--- Conexões seguras para executar ao entrar e ao renascer
-LocalPlayer.CharacterAdded:Connect(function(char)
-    pcall(onCharacter, char)
+    end
 end)
 
-if LocalPlayer.Character then
-    task.spawn(function()
-        pcall(onCharacter, LocalPlayer.Character)
-    end)
-end
+-- Lógica de Fling, Kill All e ESP
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            local char = player.Character
+            if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+            local root = char.HumanoidRootPart
+
+            local isMurderer = char:FindFirstChild("Knife") or player.Backpack:FindFirstChild("Knife")
+
+            if getgenv().KillAllMurderer and isMurderer then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local targetRoot = p.Character.HumanoidRootPart
+                        root.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 2)
+                        task.wait(0.1)
+                    end
+                end
+            end
+
+            if getgenv().FlingMurderer then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= player and p.Character then
+                        local mChar = p.Character
+                        local mKnife = mChar:FindFirstChild("Knife") or p.Backpack:FindFirstChild("Knife")
+                        if mKnife and mChar:FindFirstChild("HumanoidRootPart") then
+                            local mRoot = mChar.HumanoidRootPart
+
+                            local bav = Instance.new("BodyAngularVelocity")
+                            bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+                            bav.AngularVelocity = Vector3.new(0, 99999, 0)
+                            bav.Parent = root
+
+                            local bv = Instance.new("BodyVelocity")
+                            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                            bv.Velocity = mRoot.Position - root.Position
+                            bv.Parent = root
+
+                            root.CFrame = mRoot.CFrame
+                            task.wait(0.15)
+                            bav:Destroy()
+                            bv:Destroy()
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj.Name == "Candy" or obj.Name == "CoinVisual" then
+                    if getgenv().CandyESP then
+                        if not obj:FindFirstChild("CandyHighlight") then
+                            local hl = Instance.new("Highlight")
+                            hl.Name = "CandyHighlight"
+                            hl.FillColor = Color3.fromRGB(255, 110, 0)
+                            hl.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            hl.FillTransparency = 0.3
+                            hl.Parent = obj
+                        end
+                    else
+                        if obj:FindFirstChild("CandyHighlight") then
+                            obj.CandyHighlight:Destroy()
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+print("[Pumpkin Hub] loaded — cracked by ouxhiee")
